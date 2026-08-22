@@ -24,8 +24,8 @@ Coins are added and removed from inside the panel.
 - `curl` (present on a standard Omarchy install)
 - Outbound HTTPS to `api.coingecko.com`
 
-No API key, no account, and **no elevated privileges** — the plugin runs entirely as your
-user and never invokes `sudo`, `pkexec`, or any system-modifying command.
+No API key, no account, and **no elevated privileges**. The plugin runs entirely as your
+own user: it asks for no privilege escalation of any kind, and modifies no system state.
 
 ## Install
 
@@ -81,8 +81,9 @@ never loaded by the shell.
 | `~/.config/omarchy/plugins/io.github.victorrangel10.crypto-watch/` | the plugin files |
 | `~/.config/omarchy/shell.json` | one entry under `bar.layout.<section>`, holding your `coins` and `window` |
 
-Nothing else: no root, no `sudo`/`pkexec`, no systemd units, no `PATH` changes, and no
-files outside `~/.config/omarchy`. The only network access is HTTPS to `api.coingecko.com`.
+Nothing else: no privilege escalation, no service units, no administrator rights, no
+`PATH` changes, and no files outside `~/.config/omarchy`. The only network access is
+outbound HTTPS to `api.coingecko.com`.
 
 ## Uninstall
 
