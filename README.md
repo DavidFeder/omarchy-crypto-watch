@@ -34,10 +34,90 @@ omarchy plugin add https://github.com/victorrangel10/omarchy-crypto-watch.git
 omarchy plugin enable io.github.victorrangel10.crypto-watch
 ```
 
-Plugins land disabled so you can read the code before enabling it. To remove:
+`omarchy plugin add` clones the repo into `~/.config/omarchy/plugins/io.github.victorrangel10.crypto-watch/`
+(the folder is named from the manifest id) and leaves it **disabled**, so you can read the
+code before it runs. `enable` puts the widget in the bar section named by the manifest
+(`right`); pass a placement to override it, or move it later:
 
 ```bash
-omarchy plugin remove io.github.victorrangel10.crypto-watch
+omarchy plugin enable io.github.victorrangel10.crypto-watch --section center
+omarchy bar move io.github.victorrangel10.crypto-watch --section right
+```
+
+For scripts and agents, do both steps at once, without prompts:
+
+```bash
+omarchy plugin add https://github.com/victorrangel10/omarchy-crypto-watch.git --enable --yes
+```
+
+### Updating
+
+```bash
+omarchy plugin update io.github.victorrangel10.crypto-watch        # shows a diff, fast-forwards
+omarchy plugin update io.github.victorrangel10.crypto-watch --yes  # no prompts
+```
+
+Since the install is a plain git checkout, pinning a tag or switching branches is ordinary
+git inside the plugin folder.
+
+### Manual install (without git)
+
+```bash
+dest=~/.config/omarchy/plugins/io.github.victorrangel10.crypto-watch
+mkdir -p "$dest"
+cp manifest.json BarWidget.qml Panel.qml Model.js "$dest"/
+omarchy-shell shell rescanPlugins
+omarchy plugin enable io.github.victorrangel10.crypto-watch
+```
+
+Copy the files — do not symlink them. Omarchy rejects symlinks inside plugin folders.
+Only those four files are needed at runtime; `tests/`, `preview.png` and this README are
+never loaded by the shell.
+
+### What the install touches
+
+| Path | Change |
+|------|--------|
+| `~/.config/omarchy/plugins/io.github.victorrangel10.crypto-watch/` | the plugin files |
+| `~/.config/omarchy/shell.json` | one entry under `bar.layout.<section>`, holding your `coins` and `window` |
+
+Nothing else: no root, no `sudo`/`pkexec`, no systemd units, no `PATH` changes, and no
+files outside `~/.config/omarchy`. The only network access is HTTPS to `api.coingecko.com`.
+
+## Uninstall
+
+```bash
+omarchy plugin remove io.github.victorrangel10.crypto-watch         # asks to confirm
+omarchy plugin remove io.github.victorrangel10.crypto-watch --yes   # no prompts
+```
+
+That disables the plugin first — which removes its entry from `bar.layout` in
+`shell.json` — and then deletes the folder, because a git-installed plugin can be cloned
+again from upstream. A folder installed by hand (no `.git`) is **not** deleted; it is moved
+to `~/.config/omarchy/plugins/.io.github.victorrangel10.crypto-watch.bak.<UTC timestamp>`.
+
+**Your coin list lives in the `shell.json` entry, so removing the plugin discards it.**
+Save it first if you want it back later:
+
+```bash
+jq '[.bar.layout[][] | select(.id == "io.github.victorrangel10.crypto-watch")][0]' \
+  ~/.config/omarchy/shell.json > crypto-watch-entry.json
+```
+
+To take it off the bar but keep the files and your list:
+
+```bash
+omarchy plugin disable io.github.victorrangel10.crypto-watch
+omarchy plugin enable io.github.victorrangel10.crypto-watch
+```
+
+Verify a clean removal:
+
+```bash
+omarchy plugin list | grep crypto-watch                                   # no output
+jq '[.bar.layout[][] | select(.id | test("crypto-watch"))] | length' \
+  ~/.config/omarchy/shell.json                                            # 0
+ls -d ~/.config/omarchy/plugins/io.github.victorrangel10.crypto-watch     # no such file
 ```
 
 ## Usage
