@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.victorrangel10.crypto-watch",
+  "name": "Crypto Watch",
+  "version": "0.1.0",
+  "author": "Victor Rangel",
+  "license": "MIT",
+  "description": "Crypto prices in the bar: click for a panel with your coins, 1h/24h/7d change, and in-panel add/remove",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Crypto Watch",
+    "description": "Crypto prices with 1h/24h/7d change and in-panel coin management",
+    "category": "Info",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "window": "24h"
+    }
+  }
+}
