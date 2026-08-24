@@ -189,7 +189,13 @@ management — as pure functions with no QML dependency, so it runs under node:
 
 ```bash
 node tests/model-test.js
+node tests/panel-test.js
 ```
+
+`tests/panel-test.js` guards the sinks that render CoinGecko-controlled strings: a `Text`
+bound to `modelData.name` or `modelData.symbol` must declare `textFormat: Text.PlainText`,
+so a markup-shaped coin name cannot reach Qt's rich-text path and pull remote resources
+into the shell process.
 
 Fixtures in `tests/fixtures/` are captured from live CoinGecko responses. The QML side
 is checked with the tools Omarchy's plugin docs require:

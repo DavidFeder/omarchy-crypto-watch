@@ -352,6 +352,7 @@ Panel {
 
                 Text {
                   text: modelData.symbol
+                  textFormat: Text.PlainText
                   color: root.contentForeground
                   font.family: root.contentFontFamily
                   font.pixelSize: Style.font.title
@@ -362,6 +363,7 @@ Panel {
                   width: parent.width
                   elide: Text.ElideRight
                   text: modelData.name
+                  textFormat: Text.PlainText
                   color: Color.muted
                   font.family: root.contentFontFamily
                   font.pixelSize: Style.font.caption
@@ -474,6 +476,7 @@ Panel {
                 anchors.verticalCenter: parent.verticalCenter
                 elide: Text.ElideRight
                 text: modelData.name
+                textFormat: Text.PlainText
                 color: root.contentForeground
                 font.family: root.contentFontFamily
                 font.pixelSize: Style.font.bodySmall
@@ -485,6 +488,7 @@ Panel {
                 anchors.rightMargin: Style.space(6)
                 anchors.verticalCenter: parent.verticalCenter
                 text: modelData.symbol
+                textFormat: Text.PlainText
                 color: Color.muted
                 font.family: root.contentFontFamily
                 font.pixelSize: Style.font.caption
