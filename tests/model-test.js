@@ -176,9 +176,23 @@ assert.strictEqual(Model.trend(-1.5), "down")
 assert.strictEqual(Model.trend(0), "flat")
 assert.strictEqual(Model.trend(null), "flat")
 
+assert.deepStrictEqual(Model.fetchCommand("https://api.coingecko.com/api/v3/search?query=btc"), [
+  "curl",
+  "-fsS",
+  "--proto",
+  "=https",
+  "--max-filesize",
+  "2097152",
+  "--max-time",
+  "10",
+  "https://api.coingecko.com/api/v3/search?query=btc"
+])
+assert.strictEqual(Model.MAX_RESPONSE_BYTES, 2097152)
+
 assert.strictEqual(Model.errorForExit(0), "")
 assert.strictEqual(Model.errorForExit(22), "Rate limited")
 assert.strictEqual(Model.errorForExit(28), "Timed out")
+assert.strictEqual(Model.errorForExit(63), "Response too large")
 assert.strictEqual(Model.errorForExit(6), "Offline")
 assert.strictEqual(Model.errorForExit(7), "Offline")
 assert.strictEqual(Model.errorForExit(1), "Network error")

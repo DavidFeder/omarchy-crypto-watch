@@ -85,6 +85,12 @@ Nothing else: no privilege escalation, no service units, no administrator rights
 `PATH` changes, and no files outside `~/.config/omarchy`. The only network access is
 outbound HTTPS to `api.coingecko.com`.
 
+Every request is issued by `curl` with `--proto "=https"`, a 10-second whole-request
+deadline, and a 2 MiB response ceiling. The ceiling is enforced by `curl` itself, so an
+oversized or endless body is cut off before it reaches the shell process rather than
+after — including bodies that declare no length. A cut-off response reports
+`Response too large` and leaves the last good prices on screen.
+
 ## Uninstall
 
 ```bash
@@ -182,6 +188,9 @@ answers `429`. Crypto Watch is built around that:
 
 Searching for a coin costs one additional request, debounced while you type.
 
+Both requests are built by `Model.fetchCommand`, so the transport limits above apply to
+every call the plugin makes.
+
 ## Development
 
 `Model.js` holds the plugin's logic — URL building, response parsing, formatting, list
@@ -195,7 +204,9 @@ node tests/panel-test.js
 `tests/panel-test.js` guards the sinks that render CoinGecko-controlled strings: a `Text`
 bound to `modelData.name` or `modelData.symbol` must declare `textFormat: Text.PlainText`,
 so a markup-shaped coin name cannot reach Qt's rich-text path and pull remote resources
-into the shell process.
+into the shell process. It also guards the transport: `Panel.qml` may not assemble a
+`curl` argv inline, and both `Process.command` assignments must come from
+`Model.fetchCommand`.
 
 Fixtures in `tests/fixtures/` are captured from live CoinGecko responses. The QML side
 is checked with the tools Omarchy's plugin docs require:

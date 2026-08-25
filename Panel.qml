@@ -105,7 +105,7 @@ Panel {
     var now = Date.now()
     if (!force && !Model.shouldFetch(root.lastFetchAt, now, Model.MIN_FETCH_INTERVAL_MS)) return
     root.lastFetchAt = now
-    priceProc.command = ["curl", "-fsS", "--max-time", "10", url]
+    priceProc.command = Model.fetchCommand(url)
     priceProc.running = true
   }
 
@@ -154,7 +154,7 @@ Panel {
       return
     }
     if (searchProc.running) return
-    searchProc.command = ["curl", "-fsS", "--max-time", "10", url]
+    searchProc.command = Model.fetchCommand(url)
     searchProc.running = true
   }
 

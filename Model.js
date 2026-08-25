@@ -13,6 +13,8 @@ var WINDOWS = [
 var DEFAULT_WINDOW = "24h"
 var SEARCH_LIMIT = 6
 var MIN_FETCH_INTERVAL_MS = 30000
+var MAX_RESPONSE_BYTES = 2097152
+var REQUEST_TIMEOUT_SECONDS = 10
 
 var MARKETS_ENDPOINT = "https://api.coingecko.com/api/v3/coins/markets"
 var SEARCH_ENDPOINT = "https://api.coingecko.com/api/v3/search"
@@ -136,6 +138,20 @@ function searchUrl(query) {
   var trimmed = text(query)
   if (trimmed === "") return ""
   return SEARCH_ENDPOINT + "?query=" + encodeURIComponent(trimmed)
+}
+
+function fetchCommand(url) {
+  return [
+    "curl",
+    "-fsS",
+    "--proto",
+    "=https",
+    "--max-filesize",
+    String(MAX_RESPONSE_BYTES),
+    "--max-time",
+    String(REQUEST_TIMEOUT_SECONDS),
+    url
+  ]
 }
 
 function decode(raw) {
@@ -279,6 +295,7 @@ function errorForExit(code) {
   if (number === 0) return ""
   if (number === 22) return "Rate limited"
   if (number === 28) return "Timed out"
+  if (number === 63) return "Response too large"
   if (number === 6 || number === 7) return "Offline"
   return "Network error"
 }
@@ -300,6 +317,7 @@ if (typeof module !== "undefined" && module.exports) {
     DEFAULT_WINDOW: DEFAULT_WINDOW,
     SEARCH_LIMIT: SEARCH_LIMIT,
     MIN_FETCH_INTERVAL_MS: MIN_FETCH_INTERVAL_MS,
+    MAX_RESPONSE_BYTES: MAX_RESPONSE_BYTES,
     coinsFromSettings: coinsFromSettings,
     addCoin: addCoin,
     removeCoin: removeCoin,
@@ -308,6 +326,7 @@ if (typeof module !== "undefined" && module.exports) {
     windowField: windowField,
     priceUrl: priceUrl,
     searchUrl: searchUrl,
+    fetchCommand: fetchCommand,
     parseMarkets: parseMarkets,
     parseSearch: parseSearch,
     placeholderCoins: placeholderCoins,
