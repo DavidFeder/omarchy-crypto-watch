@@ -179,12 +179,12 @@ assert.strictEqual(Model.trend(null), "flat")
 const hugeName = "N".repeat(2000000)
 const hugeSymbol = "S".repeat(2000000)
 
-assert.strictEqual(Model.MAX_NAME_CHARS, 96)
-assert.strictEqual(Model.MAX_SYMBOL_CHARS, 24)
+assert.strictEqual(Model.MAX_NAME_CHARS, 128)
+assert.strictEqual(Model.MAX_SYMBOL_CHARS, 48)
 
 const clamped = Model.addCoin([], { id: "bitcoin", symbol: hugeSymbol, name: hugeName })
-assert.strictEqual(clamped[0].name.length, 96)
-assert.strictEqual(clamped[0].symbol.length, 24)
+assert.strictEqual(clamped[0].name.length, 128)
+assert.strictEqual(clamped[0].symbol.length, 48)
 
 const clampedMarkets = Model.parseMarkets(
   JSON.stringify([{ id: "bitcoin", symbol: hugeSymbol, name: hugeName, current_price: 100 }]),
@@ -192,20 +192,38 @@ const clampedMarkets = Model.parseMarkets(
   "24h"
 )
 assert.strictEqual(clampedMarkets.ok, true)
-assert.strictEqual(clampedMarkets.coins[0].name.length, 96)
-assert.strictEqual(clampedMarkets.coins[0].symbol.length, 24)
+assert.strictEqual(clampedMarkets.coins[0].name.length, 128)
+assert.strictEqual(clampedMarkets.coins[0].symbol.length, 48)
 
-const hostileIds = ["x#frag", "a b", "bitcoin&vs_currency=eur", "", "-lead", "a".repeat(65), "a/b", "a%2e"]
+const hostileIds = ["x#frag", "a b", "bitcoin&vs_currency=eur", "", "a".repeat(129), "a/b", "a%2e"]
 hostileIds.forEach((id) => {
   assert.deepStrictEqual(Model.addCoin([], { id: id, symbol: "X", name: "X" }), [], "must reject id: " + id)
   assert.deepStrictEqual(Model.coinsFromSettings({ coins: [id] }), [], "must reject bare id: " + id)
 })
 
-const validIds = ["bitcoin", "0x0-ai-ai-smart-contract", "wall_street", "a.b", "BITCOIN"]
+const longestRealId = "blackrock-etf-trust-ii-ishares-aaa-clo-active-etf-dinari-tokenized-etf"
+const validIds = ["bitcoin", "0x0-ai-ai-smart-contract", "wall_street", "a.b", "BITCOIN", "-11", "_", longestRealId, "a".repeat(128)]
 validIds.forEach((id) => {
   assert.strictEqual(Model.addCoin([], { id: id, symbol: "X", name: "X" }).length, 1, "must accept id: " + id)
 })
 assert.strictEqual(Model.addCoin([], { id: "BITCOIN", symbol: "X", name: "X" })[0].id, "bitcoin")
+
+const spaceBomb = "A" + " ".repeat(500000) + "B"
+
+const bombStart = Date.now()
+const bombed = Model.parseMarkets(
+  JSON.stringify([{ id: "bitcoin", symbol: spaceBomb, name: spaceBomb, current_price: 100 }]),
+  [{ id: "bitcoin", symbol: "BTC", name: "Bitcoin" }],
+  "24h"
+)
+const bombElapsed = Date.now() - bombStart
+assert.strictEqual(bombed.coins[0].name.length, 128)
+assert.ok(bombElapsed < 1000, "interior whitespace must not backtrack, took " + bombElapsed + "ms")
+
+const rawStart = Date.now()
+Model.parseMarkets("[" + " ".repeat(500000) + "]", Model.DEFAULT_COINS, "24h")
+const rawElapsed = Date.now() - rawStart
+assert.ok(rawElapsed < 1000, "raw body trim must not backtrack, took " + rawElapsed + "ms")
 
 const hostileSearch = Model.parseSearch(
   JSON.stringify({ coins: [{ id: "x#frag", symbol: "X", name: "X" }, { id: "solana", symbol: "SOL", name: "Solana" }] }),

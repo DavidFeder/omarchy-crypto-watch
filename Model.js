@@ -14,16 +14,16 @@ var DEFAULT_WINDOW = "24h"
 var SEARCH_LIMIT = 6
 var MIN_FETCH_INTERVAL_MS = 30000
 var MAX_RESPONSE_BYTES = 2097152
-var MAX_NAME_CHARS = 96
-var MAX_SYMBOL_CHARS = 24
-var COIN_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{0,63}$/
+var MAX_NAME_CHARS = 128
+var MAX_SYMBOL_CHARS = 48
+var COIN_ID_PATTERN = /^[a-z0-9._-]{1,128}$/
 var REQUEST_TIMEOUT_SECONDS = 10
 
 var MARKETS_ENDPOINT = "https://api.coingecko.com/api/v3/coins/markets"
 var SEARCH_ENDPOINT = "https://api.coingecko.com/api/v3/search"
 
 function text(value) {
-  return String(value === undefined || value === null ? "" : value).replace(/^\s+|\s+$/g, "")
+  return String(value === undefined || value === null ? "" : value).trim()
 }
 
 function clamp(value, max) {

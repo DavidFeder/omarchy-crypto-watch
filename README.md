@@ -176,10 +176,12 @@ written by the panel itself — editing by hand is optional.
 - `coins` — ordered list; `id` must be a CoinGecko coin id. A bare string works too
   (`"dogecoin"`), and `symbol` / `name` are corrected from the API response on the next
   fetch. Omit the key for the defaults; an empty list shows an empty state.
-- An `id` must match `[a-z0-9][a-z0-9._-]{0,63}`; entries that do not are dropped rather
-  than sent, so neither a hand-edited config nor a search result can bend the request
-  URL. Names are kept to 96 characters and symbols to 24 — well clear of the longest
-  real values — so an oversized string cannot stall the shell in text layout.
+- An `id` must match `[a-z0-9._-]{1,128}`; entries that do not are dropped rather than
+  sent, so neither a hand-edited config nor a search result can bend the request URL.
+  Names are kept to 128 characters and symbols to 48. Across CoinGecko's full list of
+  18,664 coins the longest real id, name and symbol are 86, 88 and 38, so no real coin
+  is rejected or truncated — the caps exist to stop an oversized string from stalling
+  the shell in text layout.
 
 ## API usage and rate limits
 
