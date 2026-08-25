@@ -176,6 +176,46 @@ assert.strictEqual(Model.trend(-1.5), "down")
 assert.strictEqual(Model.trend(0), "flat")
 assert.strictEqual(Model.trend(null), "flat")
 
+const hugeName = "N".repeat(2000000)
+const hugeSymbol = "S".repeat(2000000)
+
+assert.strictEqual(Model.MAX_NAME_CHARS, 96)
+assert.strictEqual(Model.MAX_SYMBOL_CHARS, 24)
+
+const clamped = Model.addCoin([], { id: "bitcoin", symbol: hugeSymbol, name: hugeName })
+assert.strictEqual(clamped[0].name.length, 96)
+assert.strictEqual(clamped[0].symbol.length, 24)
+
+const clampedMarkets = Model.parseMarkets(
+  JSON.stringify([{ id: "bitcoin", symbol: hugeSymbol, name: hugeName, current_price: 100 }]),
+  [{ id: "bitcoin", symbol: "BTC", name: "Bitcoin" }],
+  "24h"
+)
+assert.strictEqual(clampedMarkets.ok, true)
+assert.strictEqual(clampedMarkets.coins[0].name.length, 96)
+assert.strictEqual(clampedMarkets.coins[0].symbol.length, 24)
+
+const hostileIds = ["x#frag", "a b", "bitcoin&vs_currency=eur", "", "-lead", "a".repeat(65), "a/b", "a%2e"]
+hostileIds.forEach((id) => {
+  assert.deepStrictEqual(Model.addCoin([], { id: id, symbol: "X", name: "X" }), [], "must reject id: " + id)
+  assert.deepStrictEqual(Model.coinsFromSettings({ coins: [id] }), [], "must reject bare id: " + id)
+})
+
+const validIds = ["bitcoin", "0x0-ai-ai-smart-contract", "wall_street", "a.b", "BITCOIN"]
+validIds.forEach((id) => {
+  assert.strictEqual(Model.addCoin([], { id: id, symbol: "X", name: "X" }).length, 1, "must accept id: " + id)
+})
+assert.strictEqual(Model.addCoin([], { id: "BITCOIN", symbol: "X", name: "X" })[0].id, "bitcoin")
+
+const hostileSearch = Model.parseSearch(
+  JSON.stringify({ coins: [{ id: "x#frag", symbol: "X", name: "X" }, { id: "solana", symbol: "SOL", name: "Solana" }] }),
+  []
+)
+assert.deepStrictEqual(hostileSearch.results.map((c) => c.id), ["solana"])
+
+assert.ok(Model.priceUrl([{ id: "x#frag", symbol: "X", name: "X" }]).indexOf("ids=x%23frag") > 0)
+assert.ok(Model.priceUrl(Model.DEFAULT_COINS).indexOf("ids=bitcoin,ethereum,solana") > 0)
+
 assert.deepStrictEqual(Model.fetchCommand("https://api.coingecko.com/api/v3/search?query=btc"), [
   "curl",
   "-fsS",

@@ -85,6 +85,9 @@ Nothing else: no privilege escalation, no service units, no administrator rights
 `PATH` changes, and no files outside `~/.config/omarchy`. The only network access is
 outbound HTTPS to `api.coingecko.com`.
 
+Responses are treated as untrusted: coin ids are whitelisted, names and symbols are
+length-capped, and every string the API controls renders as plain text.
+
 Every request is issued by `curl` with `--proto "=https"`, a 10-second whole-request
 deadline, and a 2 MiB response ceiling. The ceiling is enforced by `curl` itself, so an
 oversized or endless body is cut off before it reaches the shell process rather than
@@ -173,6 +176,10 @@ written by the panel itself — editing by hand is optional.
 - `coins` — ordered list; `id` must be a CoinGecko coin id. A bare string works too
   (`"dogecoin"`), and `symbol` / `name` are corrected from the API response on the next
   fetch. Omit the key for the defaults; an empty list shows an empty state.
+- An `id` must match `[a-z0-9][a-z0-9._-]{0,63}`; entries that do not are dropped rather
+  than sent, so neither a hand-edited config nor a search result can bend the request
+  URL. Names are kept to 96 characters and symbols to 24 — well clear of the longest
+  real values — so an oversized string cannot stall the shell in text layout.
 
 ## API usage and rate limits
 

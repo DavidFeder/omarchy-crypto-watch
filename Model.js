@@ -14,6 +14,9 @@ var DEFAULT_WINDOW = "24h"
 var SEARCH_LIMIT = 6
 var MIN_FETCH_INTERVAL_MS = 30000
 var MAX_RESPONSE_BYTES = 2097152
+var MAX_NAME_CHARS = 96
+var MAX_SYMBOL_CHARS = 24
+var COIN_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{0,63}$/
 var REQUEST_TIMEOUT_SECONDS = 10
 
 var MARKETS_ENDPOINT = "https://api.coingecko.com/api/v3/coins/markets"
@@ -21,6 +24,15 @@ var SEARCH_ENDPOINT = "https://api.coingecko.com/api/v3/search"
 
 function text(value) {
   return String(value === undefined || value === null ? "" : value).replace(/^\s+|\s+$/g, "")
+}
+
+function clamp(value, max) {
+  var body = text(value)
+  return body.length > max ? body.substring(0, max) : body
+}
+
+function isCoinId(value) {
+  return COIN_ID_PATTERN.test(value)
 }
 
 function toNumber(value) {
@@ -49,15 +61,19 @@ function toArray(value) {
 function normalizeCoin(value) {
   if (typeof value === "string") {
     var id = text(value).toLowerCase()
-    if (id === "") return null
-    return { id: id, symbol: id.toUpperCase(), name: capitalize(id) }
+    if (!isCoinId(id)) return null
+    return { id: id, symbol: clamp(id, MAX_SYMBOL_CHARS).toUpperCase(), name: capitalize(id) }
   }
   if (!value || typeof value !== "object") return null
   var coinId = text(value.id).toLowerCase()
-  if (coinId === "") return null
-  var symbol = text(value.symbol).toUpperCase() || coinId.toUpperCase()
-  var name = text(value.name) || capitalize(coinId)
-  return { id: coinId, symbol: symbol, name: name }
+  if (!isCoinId(coinId)) return null
+  var symbol = clamp(value.symbol, MAX_SYMBOL_CHARS).toUpperCase()
+  var name = clamp(value.name, MAX_NAME_CHARS)
+  return {
+    id: coinId,
+    symbol: symbol || clamp(coinId, MAX_SYMBOL_CHARS).toUpperCase(),
+    name: name || capitalize(coinId)
+  }
 }
 
 function normalizeCoins(values) {
@@ -127,9 +143,12 @@ function coinIds(coins) {
 
 function priceUrl(coins) {
   if (!isArrayLike(coins) || coins.length === 0) return ""
+  var ids = coinIds(coins)
+  var encoded = []
+  for (var i = 0; i < ids.length; i++) encoded.push(encodeURIComponent(ids[i]))
   return MARKETS_ENDPOINT
     + "?vs_currency=usd"
-    + "&ids=" + coinIds(coins).join(",")
+    + "&ids=" + encoded.join(",")
     + "&price_change_percentage=1h,24h,7d"
     + "&sparkline=false"
 }
@@ -207,10 +226,12 @@ function parseMarkets(raw, coins, windowKey) {
     var match = byId[coin.id]
     var price = match ? toNumber(match.current_price) : null
     if (price !== null) priced++
+    var symbol = match ? clamp(match.symbol, MAX_SYMBOL_CHARS).toUpperCase() : ""
+    var name = match ? clamp(match.name, MAX_NAME_CHARS) : ""
     parsed.push({
       id: coin.id,
-      symbol: match && text(match.symbol) !== "" ? text(match.symbol).toUpperCase() : coin.symbol,
-      name: match && text(match.name) !== "" ? text(match.name) : coin.name,
+      symbol: symbol !== "" ? symbol : coin.symbol,
+      name: name !== "" ? name : coin.name,
       price: price,
       change: match ? toNumber(match[field]) : null
     })
@@ -318,6 +339,8 @@ if (typeof module !== "undefined" && module.exports) {
     SEARCH_LIMIT: SEARCH_LIMIT,
     MIN_FETCH_INTERVAL_MS: MIN_FETCH_INTERVAL_MS,
     MAX_RESPONSE_BYTES: MAX_RESPONSE_BYTES,
+    MAX_NAME_CHARS: MAX_NAME_CHARS,
+    MAX_SYMBOL_CHARS: MAX_SYMBOL_CHARS,
     coinsFromSettings: coinsFromSettings,
     addCoin: addCoin,
     removeCoin: removeCoin,
