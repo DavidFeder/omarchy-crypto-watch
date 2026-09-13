@@ -27,6 +27,8 @@ Panel {
   property int cursor: -1
   property var searchResults: []
   property string searchError: ""
+  property string searchIssued: ""
+  property bool refreshQueued: false
   readonly property bool loading: priceProc.running
   readonly property bool hasPrices: updatedAt !== null
   onCoinsChanged: { root.cursor = Math.min(root.cursor, root.coins.length - 1); root.render(); root.refresh(true) }
@@ -56,10 +58,14 @@ Panel {
     root.errorText = result.ok ? "" : result.error
   }
   function refresh(force) {
-    if (priceProc.running) return
+    if (priceProc.running) {
+      if (force) root.refreshQueued = true
+      return
+    }
     if (root.coins.length === 0) return
     var now = Date.now()
     if (!force && !Model.shouldFetch(root.lastFetchAt, now, Model.MIN_FETCH_INTERVAL_MS)) return
+    root.refreshQueued = false
     root.lastFetchAt = now
     priceProc.command = Model.fetchCommand(root.fetchScript, root.coins)
     priceProc.running = true
@@ -80,13 +86,27 @@ Panel {
     root.cursor = next
   }
   function removeCursorCoin() { if (root.cursor < 0 || root.cursor >= root.coins.length) return; root.persistSettings({ coins: Model.removeCoin(root.coins, root.coins[root.cursor].id) }) }
-  function clearSearch() { searchField.text = ""; root.searchResults = []; root.searchError = ""; searchDebounce.stop() }
-  function runSearch() {
-    root.searchResults = Model.catalogSearch(searchField.text, root.coins)
+  function clearSearch() {
+    searchField.text = ""
+    root.searchResults = []
     root.searchError = ""
-    var command = Model.searchCommand(root.fetchScript, searchField.text)
-    if (command.length === 0 || searchProc.running) return
-    searchProc.command = Model.searchCommand(root.fetchScript, searchField.text)
+    root.searchIssued = ""
+    searchDebounce.stop()
+    if (searchProc.running) searchProc.running = false
+  }
+  function runSearch() {
+    var query = searchField.text
+    root.searchResults = Model.catalogSearch(query, root.coins)
+    root.searchError = ""
+    var command = Model.searchCommand(root.fetchScript, query)
+    if (command.length === 0) {
+      root.searchIssued = ""
+      if (searchProc.running) searchProc.running = false
+      return
+    }
+    if (searchProc.running) searchProc.running = false
+    root.searchIssued = query
+    searchProc.command = Model.searchCommand(root.fetchScript, query)
     searchProc.running = true
   }
   function addResult(result) { if (!result) return; root.persistSettings({ coins: Model.addCoin(root.coins, result) }); root.clearSearch(); root.adding = false }
@@ -107,19 +127,32 @@ Panel {
         if (result.ok) root.updatedAt = new Date()
       }
     }
-    onExited: function(exitCode) { var failure = Model.errorForExit(exitCode); if (failure !== "") root.errorText = failure }
+    onExited: function(exitCode) {
+      var failure = Model.errorForExit(exitCode)
+      if (failure !== "") root.errorText = failure
+      if (root.refreshQueued) {
+        root.refreshQueued = false
+        Qt.callLater(function() { root.refresh(true) })
+      }
+    }
   }
   Process {
     id: searchProc
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
-        var result = Model.parseSearch(String(text || ""), root.coins, searchField.text)
+        var query = root.searchIssued
+        if (query === "" || searchField.text !== query) return
+        var result = Model.parseSearch(String(text || ""), root.coins, query)
         root.searchResults = result.results
         root.searchError = result.ok ? "" : result.error
       }
     }
-    onExited: function(exitCode) { var failure = Model.errorForExit(exitCode); if (failure !== "" && root.searchResults.length === 0) root.searchError = failure }
+    onExited: function(exitCode) {
+      if (searchField.text !== root.searchIssued) return
+      var failure = Model.errorForExit(exitCode)
+      if (failure !== "" && root.searchResults.length === 0) root.searchError = failure
+    }
   }
   Timer { id: searchDebounce; interval: 400; onTriggered: root.runSearch() }
   Timer { interval: 60000; repeat: true; running: true; onTriggered: root.refresh(false) }
