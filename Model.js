@@ -5,7 +5,6 @@ var MIN_FETCH_INTERVAL_MS = 45000
 var MAX_RESPONSE_BYTES = 2097152
 var MAX_NAME_CHARS = 128
 var MAX_SYMBOL_CHARS = 48
-var REQUEST_TIMEOUT_SECONDS = 12
 var DEFAULT_WINDOW = "24h"
 var DEFAULT_PRIMARY = "hex"
 var DEFAULT_TICKER = false
@@ -41,7 +40,7 @@ function scriptPathFromUrl(url){var path=text(url);if(path.indexOf("file://")===
 function compactCoins(coins){var list=toArray(coins);var out=[];for(var i=0;i<list.length;i++){if(!list[i]||!isAddress(list[i].address)||!isCoinId(list[i].id))continue;out.push({id:list[i].id,address:list[i].address.toLowerCase()})}return out}
 function fetchCommand(scriptUrl,coins){return["node",scriptPathFromUrl(scriptUrl),"prices",JSON.stringify(compactCoins(coins))]}
 function searchCommand(scriptUrl,query){var q=text(query);if(q==="")return[];return["node",scriptPathFromUrl(scriptUrl),"search",q]}
-function decode(raw){var body=text(raw);if(body==="")return{error:"No response"};var payload;try{payload=JSON.parse(body)}catch(e){return{error:"Bad response"}}if(!payload||typeof payload!=="object")return{error:"Bad response"};if(payload.status&&toNumber(payload.status.error_code)===429)return{error:"Rate limited"};return{payload:payload}}
+function decode(raw){var body=text(raw);if(body==="")return{error:"No response"};var payload;try{payload=JSON.parse(body)}catch(e){return{error:"Bad response"}}if(!payload||typeof payload!=="object")return{error:"Bad response"};return{payload:payload}}
 function placeholderCoins(coins){var list=toArray(coins);var rows=[];for(var i=0;i<list.length;i++)rows.push({id:list[i].id,symbol:list[i].symbol,name:list[i].name,address:list[i].address,origin:list[i].origin,originLabel:originLabel(list[i].origin),price:null,change:null});return rows}
 function changeForWindow(entry,windowKey){var key=normalizeWindow(windowKey);if(!entry||!entry.change)return null;if(typeof entry.change==="number")return toNumber(entry.change);return toNumber(entry.change[key])}
 function parseMarkets(raw,coins,windowKey){var wanted=toArray(coins);if(wanted.length===0)return{ok:false,coins:[],error:"No coins"};var decoded=decode(raw);if(decoded.error)return{ok:false,coins:[],error:decoded.error};var payload=decoded.payload;var rows=payload.coins;if(!isArrayLike(rows))return{ok:false,coins:[],error:"No prices"};var byId={};for(var i=0;i<rows.length;i++){var row=rows[i];if(row&&row.id)byId[text(row.id).toLowerCase()]=row}var priced=0;var parsed=[];for(var c=0;c<wanted.length;c++){var coin=wanted[c];var match=byId[coin.id]||{};var price=toNumber(match.price);if(price!==null)priced++;parsed.push({id:coin.id,symbol:coin.symbol,name:coin.name,address:coin.address,origin:coin.origin,originLabel:originLabel(coin.origin),price:price,change:changeForWindow(match,windowKey),liquidity:toNumber(match.liquidity),volume24h:toNumber(match.volume24h)})}if(priced===0)return{ok:false,coins:parsed,error:"No prices"};return{ok:true,coins:parsed,error:""}}
