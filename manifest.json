@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "admxn.pulsewatch",
   "name": "Pulse Watch",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "admxn",
   "license": "MIT",
   "description": "PulseChain and RH coin prices in the bar: HEX, PLS, PLSX, INC, PRVX, eHEX from PulseX via DexScreener",

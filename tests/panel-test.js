@@ -44,5 +44,8 @@ assert.ok(bar.indexOf("admxn.pulsewatch") >= 0)
 assert.ok(panel.indexOf("admxn.pulsewatch") >= 0)
 assert.ok(panel.indexOf("toggleTicker") >= 0)
 assert.ok(bar.indexOf("tickerOn") >= 0)
+assert.ok(/\bsearchIssued\b/.test(panel))
+assert.ok(/\brefreshQueued\b/.test(panel))
+assert.ok(!/payload\.status/.test(fs.readFileSync(path.join(__dirname, "../Model.js"), "utf8")))
 
 console.log("panel-test: ok")

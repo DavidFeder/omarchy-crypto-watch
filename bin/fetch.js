@@ -9,9 +9,33 @@ const TIMEOUT_MS = 10000
 const DEX_HOST = "api.dexscreener.com"
 const ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/
 
+const WPLS = "0xa1077a294dde1b09bb078844df40758a5d0f9a27"
+const DAI = "0xefd766ccb38eaf1dfd701853bfce31359239f305"
+const EUSDC = "0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07"
+const EUSDT = "0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f"
+const HEX = "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39"
+const PLSX = "0x95b303987a60c71504d99aa1b13b4da07b0790ab"
+
+const RAIL_RANK = {}
+RAIL_RANK[DAI] = 8
+RAIL_RANK[EUSDC] = 8
+RAIL_RANK[EUSDT] = 8
+RAIL_RANK[WPLS] = 6
+RAIL_RANK[PLSX] = 4
+RAIL_RANK[HEX] = 3
+
 function fail(message, code) {
   process.stderr.write(String(message || "fetch failed") + "\n")
   process.exit(code || 1)
+}
+
+function isAllowedUrl(urlString) {
+  try {
+    const parsed = new URL(urlString)
+    return parsed.protocol === "https:" && parsed.hostname === DEX_HOST
+  } catch (err) {
+    return false
+  }
 }
 
 function getJson(urlString) {
@@ -23,7 +47,7 @@ function getJson(urlString) {
       reject(new Error("Bad URL"))
       return
     }
-    if (parsed.protocol !== "https:" || parsed.hostname !== DEX_HOST) {
+    if (!isAllowedUrl(urlString)) {
       reject(new Error("Blocked host"))
       return
     }
@@ -80,37 +104,8 @@ function num(value) {
   return Number.isFinite(n) ? n : null
 }
 
-function quoteRank(symbol) {
-  const s = String(symbol || "").toUpperCase()
-  if (s === "DAI" || s === "USDC" || s === "USDT" || s === "EUSDC" || s === "EUSDT") return 3
-  if (s === "WPLS" || s === "PLS") return 2
-  return 1
-}
-
-function pickPair(pairs, tokenAddress) {
-  const wanted = String(tokenAddress || "").toLowerCase()
-  const list = Array.isArray(pairs) ? pairs : []
-  let best = null
-  let bestScore = -1
-  for (let i = 0; i < list.length; i++) {
-    const pair = list[i]
-    if (!pair || pair.chainId !== "pulsechain") continue
-    const base = (pair.baseToken && pair.baseToken.address || "").toLowerCase()
-    const quote = (pair.quoteToken && pair.quoteToken.address || "").toLowerCase()
-    if (base !== wanted && quote !== wanted) continue
-    const liq = num(pair.liquidity && pair.liquidity.usd) || 0
-    const usd = num(pair.priceUsd)
-    if (usd === null) continue
-    const quoteSym = base === wanted
-      ? (pair.quoteToken && pair.quoteToken.symbol)
-      : (pair.baseToken && pair.baseToken.symbol)
-    const score = liq * quoteRank(quoteSym)
-    if (score > bestScore) {
-      bestScore = score
-      best = pair
-    }
-  }
-  return best
+function quoteRank(address) {
+  return RAIL_RANK[String(address || "").toLowerCase()] || 1
 }
 
 function tokenSide(pair, tokenAddress) {
@@ -119,6 +114,57 @@ function tokenSide(pair, tokenAddress) {
   const quote = pair.quoteToken || {}
   if ((base.address || "").toLowerCase() === wanted) return { token: base, asBase: true }
   return { token: quote, asBase: false }
+}
+
+function tokenUsd(pair, tokenAddress) {
+  const wanted = String(tokenAddress || "").toLowerCase()
+  const base = ((pair && pair.baseToken && pair.baseToken.address) || "").toLowerCase()
+  const usd = num(pair && pair.priceUsd)
+  if (usd === null) return null
+  if (base === wanted) return usd
+  const native = num(pair && pair.priceNative)
+  if (native === null || native === 0) return null
+  const inverted = usd / native
+  if (!Number.isFinite(inverted) || inverted <= 0) return null
+  return inverted
+}
+
+function pairScore(pair, tokenAddress) {
+  const wanted = String(tokenAddress || "").toLowerCase()
+  const base = ((pair.baseToken && pair.baseToken.address) || "").toLowerCase()
+  const quote = ((pair.quoteToken && pair.quoteToken.address) || "").toLowerCase()
+  const asBase = base === wanted
+  const rail = asBase ? quote : base
+  const liq = num(pair.liquidity && pair.liquidity.usd) || 0
+  const depth = Math.log10(liq + 10)
+  return depth * depth * quoteRank(rail) * (asBase ? 2 : 1)
+}
+
+function pickPair(pairs, tokenAddress) {
+  const wanted = String(tokenAddress || "").toLowerCase()
+  const list = Array.isArray(pairs) ? pairs : []
+  const eligible = []
+  for (let i = 0; i < list.length; i++) {
+    const pair = list[i]
+    if (!pair || pair.chainId !== "pulsechain") continue
+    const base = ((pair.baseToken && pair.baseToken.address) || "").toLowerCase()
+    const quote = ((pair.quoteToken && pair.quoteToken.address) || "").toLowerCase()
+    if (base !== wanted && quote !== wanted) continue
+    if (tokenUsd(pair, wanted) === null) continue
+    eligible.push(pair)
+  }
+  const pulsex = eligible.filter((pair) => String(pair.dexId || "").toLowerCase() === "pulsex")
+  const pool = pulsex.length ? pulsex : eligible
+  let best = null
+  let bestScore = -1
+  for (let i = 0; i < pool.length; i++) {
+    const score = pairScore(pool[i], wanted)
+    if (score > bestScore) {
+      bestScore = score
+      best = pool[i]
+    }
+  }
+  return best
 }
 
 function changeMap(pair) {
@@ -164,8 +210,8 @@ async function fetchPrices(coins) {
       address: address.toLowerCase(),
       symbol: String(token.symbol || coin.symbol || "").slice(0, 48),
       name: String(token.name || coin.name || "").slice(0, 128),
-      price: num(pair.priceUsd),
-      change: changeMap(pair),
+      price: tokenUsd(pair, address),
+      change: side.asBase ? changeMap(pair) : { "1h": null, "6h": null, "24h": null },
       volume24h: num(pair.volume && pair.volume.h24),
       liquidity: num(pair.liquidity && pair.liquidity.usd),
       dex: String(pair.dexId || "").slice(0, 32),
@@ -228,4 +274,28 @@ async function main() {
   }
 }
 
-main()
+module.exports = {
+  ADDRESS_RE,
+  DEX_HOST,
+  MAX_BYTES,
+  TIMEOUT_MS,
+  WPLS,
+  DAI,
+  EUSDC,
+  EUSDT,
+  HEX,
+  PLSX,
+  isAllowedUrl,
+  quoteRank,
+  tokenSide,
+  tokenUsd,
+  pairScore,
+  pickPair,
+  changeMap,
+  fetchPrices,
+  fetchSearch
+}
+
+if (require.main === module) {
+  main()
+}

@@ -17,7 +17,7 @@ Prices come from [DexScreener](https://dexscreener.com/pulsechain) PulseX pairs,
 | **PRVX** | `0xF6f8Db0aBa00007681F8fAF16A0FDa1c9B030b11` | ProveX |
 | **eHEX** | `0x57fde0a71132198BBeC939B98976993d8D89D225` | Bridged from Ethereum — **not** pHEX |
 
-Add-coin also knows HDRN, ICSA, bridged DAI / eUSDC / eUSDT, and any other PulseChain token DexScreener returns.
+Add-coin also knows HDRN, ICSA, bridged DAI / eUSDC / eUSDT, and any other PulseChain token DexScreener returns. Pair picks prefer PulseX; quote-side stables invert DexScreener’s base `priceUsd` instead of printing the other token’s price.
 
 Addresses follow [pulsechain-mcp token identity](https://github.com/DavidFeder/pulsechain-mcp/blob/main/docs/TOKEN_IDENTITY.md): ticker search is discovery-only; pHEX ≠ eHEX.
 
@@ -53,6 +53,16 @@ Crypto Watch is a good CoinGecko watchlist. It is the wrong feed for PulseChain:
 - CoinGecko PLS volume is a few hundred dollars
 
 Pulse Watch keeps the same Omarchy panel contract (Model.js + tests + PlainText + bounded fetch) and points it at PulseX.
+
+The GitHub repo is still named `omarchy-crypto-watch` so the fork graph stays attached to Crypto Watch. The plugin id is `admxn.pulsewatch`. There is no 7d window — DexScreener’s honest windows are 1h, 6h, and 24h.
+
+## Tests
+
+```bash
+node tests/model-test.js
+node tests/panel-test.js
+node tests/fetch-test.js
+```
 
 ## License
 
