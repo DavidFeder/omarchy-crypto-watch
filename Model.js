@@ -10,134 +10,56 @@ var DEFAULT_WINDOW = "24h"
 var DEFAULT_PRIMARY = "hex"
 var DEFAULT_TICKER = false
 var DEFAULT_TICKER_WIDTH = 280
-
-var WINDOWS = [
-  { key: "1h", label: "1h" },
-  { key: "6h", label: "6h" },
-  { key: "24h", label: "24h" }
-]
-
-var CATALOG = [
-  {
-    id: "hex",
-    symbol: "HEX",
-    displaySymbol: "HEX",
-    name: "HEX (PulseChain)",
-    address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
-    origin: "state_fork",
-    rh: true,
-    core: true
-  },
-  {
-    id: "pls",
-    symbol: "PLS",
-    displaySymbol: "PLS",
-    name: "PulseChain",
-    address: "0xa1077a294dde1b09bb078844df40758a5d0f9a27",
-    origin: "pulsechain",
-    rh: true,
-    core: true
-  },
-  {
-    id: "plsx",
-    symbol: "PLSX",
-    displaySymbol: "PLSX",
-    name: "PulseX",
-    address: "0x95b303987a60c71504d99aa1b13b4da07b0790ab",
-    origin: "pulsechain",
-    rh: true,
-    core: true
-  },
-  {
-    id: "inc",
-    symbol: "INC",
-    displaySymbol: "INC",
-    name: "Incentive",
-    address: "0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d",
-    origin: "pulsechain",
-    rh: true,
-    core: true
-  },
-  {
-    id: "prvx",
-    symbol: "PRVX",
-    displaySymbol: "PRVX",
-    name: "ProveX",
-    address: "0xf6f8db0aba00007681f8faf16a0fda1c9b030b11",
-    origin: "pulsechain",
-    rh: false,
-    core: true
-  },
-  {
-    id: "ehex",
-    symbol: "eHEX",
-    displaySymbol: "eHEX",
-    name: "eHEX (bridged from Ethereum)",
-    address: "0x57fde0a71132198bbec939b98976993d8d89d225",
-    origin: "bridged",
-    rh: true,
-    core: true
-  },
-  {
-    id: "hdrn",
-    symbol: "HDRN",
-    displaySymbol: "HDRN",
-    name: "Hedron",
-    address: "0x3819f64f282bf135d62168c1e513280daf905e06",
-    origin: "pulsechain",
-    rh: true,
-    core: false
-  },
-  {
-    id: "icsa",
-    symbol: "ICSA",
-    displaySymbol: "ICSA",
-    name: "Icosa",
-    address: "0xfc4913214444af5c715cc9f7b52655e788a569ed",
-    origin: "pulsechain",
-    rh: true,
-    core: false
-  },
-  {
-    id: "dai",
-    symbol: "DAI",
-    displaySymbol: "DAI",
-    name: "DAI (bridged from Ethereum)",
-    address: "0xefd766ccb38eaf1dfd701853bfce31359239f305",
-    origin: "bridged",
-    rh: false,
-    core: false
-  },
-  {
-    id: "eusdc",
-    symbol: "eUSDC",
-    displaySymbol: "eUSDC",
-    name: "eUSDC (bridged from Ethereum)",
-    address: "0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07",
-    origin: "bridged",
-    rh: false,
-    core: false
-  },
-  {
-    id: "eusdt",
-    symbol: "eUSDT",
-    displaySymbol: "eUSDT",
-    name: "eUSDT (bridged from Ethereum)",
-    address: "0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f",
-    origin: "bridged",
-    rh: false,
-    core: false
-  }
-]
-
-var DEFAULT_COINS = CATALOG.filter(function (c) { return c.core }).map(function (c) {
-  return catalogCoin(c)
-})
-
-var CATALOG_BY_ID = {}
-var CATALOG_BY_ADDRESS = {}
-for (var ci = 0; ci < CATALOG.length; ci++) {
-  var item = CATALOG[ci]
-  CATALOG_BY_ID[item.id] = item
-  CATALOG_BY_ADDRESS[item.address.toLowerCase()] = item
-}
+var WINDOWS = [{ key: "1h", label: "1h" }, { key: "6h", label: "6h" }, { key: "24h", label: "24h" }]
+function text(v){return String(v===undefined||v===null?"":v).trim()}
+function clamp(v,m){var b=text(v);return b.length>m?b.substring(0,m):b}
+function isCoinId(v){return COIN_ID_PATTERN.test(v)}
+function isAddress(v){return ADDRESS_RE.test(text(v))}
+function toNumber(v){if(v===undefined||v===null||v==="")return null;var n=typeof v==="number"?v:parseFloat(String(v));return isFinite(n)?n:null}
+function isArrayLike(v){if(!v||typeof v==="string"||typeof v==="number")return false;if(Object.prototype.toString.call(v)==="[object Array]")return true;return typeof v.length==="number"&&v.length>=0}
+function toArray(v){if(!isArrayLike(v))return [];var a=[];for(var i=0;i<v.length;i++)a.push(v[i]);return a}
+function catalogCoin(e){return{id:e.id,symbol:e.displaySymbol||e.symbol,name:e.name,address:e.address.toLowerCase(),origin:e.origin||"pulsechain"}}
+var CATALOG=[{id:"hex",symbol:"HEX",displaySymbol:"HEX",name:"HEX (PulseChain)",address:"0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",origin:"state_fork",rh:true,core:true},{id:"pls",symbol:"PLS",displaySymbol:"PLS",name:"PulseChain",address:"0xa1077a294dde1b09bb078844df40758a5d0f9a27",origin:"pulsechain",rh:true,core:true},{id:"plsx",symbol:"PLSX",displaySymbol:"PLSX",name:"PulseX",address:"0x95b303987a60c71504d99aa1b13b4da07b0790ab",origin:"pulsechain",rh:true,core:true},{id:"inc",symbol:"INC",displaySymbol:"INC",name:"Incentive",address:"0x2fa878ab3f87cc1c9737fc071108f904c0b0c95d",origin:"pulsechain",rh:true,core:true},{id:"prvx",symbol:"PRVX",displaySymbol:"PRVX",name:"ProveX",address:"0xf6f8db0aba00007681f8faf16a0fda1c9b030b11",origin:"pulsechain",rh:false,core:true},{id:"ehex",symbol:"eHEX",displaySymbol:"eHEX",name:"eHEX (bridged from Ethereum)",address:"0x57fde0a71132198bbec939b98976993d8d89d225",origin:"bridged",rh:true,core:true},{id:"hdrn",symbol:"HDRN",displaySymbol:"HDRN",name:"Hedron",address:"0x3819f64f282bf135d62168c1e513280daf905e06",origin:"pulsechain",rh:true,core:false},{id:"icsa",symbol:"ICSA",displaySymbol:"ICSA",name:"Icosa",address:"0xfc4913214444af5c715cc9f7b52655e788a569ed",origin:"pulsechain",rh:true,core:false},{id:"dai",symbol:"DAI",displaySymbol:"DAI",name:"DAI (bridged from Ethereum)",address:"0xefd766ccb38eaf1dfd701853bfce31359239f305",origin:"bridged",rh:false,core:false},{id:"eusdc",symbol:"eUSDC",displaySymbol:"eUSDC",name:"eUSDC (bridged from Ethereum)",address:"0x15d38573d2feeb82e7ad5187ab8c1d52810b1f07",origin:"bridged",rh:false,core:false},{id:"eusdt",symbol:"eUSDT",displaySymbol:"eUSDT",name:"eUSDT (bridged from Ethereum)",address:"0x0cb6f5a34ad42ec934882a05265a7d5f59b51a2f",origin:"bridged",rh:false,core:false}]
+var DEFAULT_COINS=CATALOG.filter(function(c){return c.core}).map(function(c){return catalogCoin(c)})
+var CATALOG_BY_ID={}
+var CATALOG_BY_ADDRESS={}
+for(var ci=0;ci<CATALOG.length;ci++){var item=CATALOG[ci];CATALOG_BY_ID[item.id]=item;CATALOG_BY_ADDRESS[item.address.toLowerCase()]=item}
+function originLabel(o){if(o==="bridged")return"Bridged from Ethereum";if(o==="state_fork")return"PulseChain HEX";return"PulseChain"}
+function lookupCatalog(value){if(!value)return null;if(typeof value==="string"){var id=text(value).toLowerCase();if(CATALOG_BY_ID[id])return catalogCoin(CATALOG_BY_ID[id]);if(isAddress(id)){var hit=CATALOG_BY_ADDRESS[id.toLowerCase()];return hit?catalogCoin(hit):null}return null}if(typeof value!=="object")return null;var byId=CATALOG_BY_ID[text(value.id).toLowerCase()];if(byId)return catalogCoin(byId);var addr=text(value.address).toLowerCase();if(isAddress(addr)&&CATALOG_BY_ADDRESS[addr])return catalogCoin(CATALOG_BY_ADDRESS[addr]);return null}
+function genericPulseCoin(address,symbol,name){var addr=text(address).toLowerCase();if(!isAddress(addr))return null;var known=CATALOG_BY_ADDRESS[addr];if(known)return catalogCoin(known);var id="pls-"+addr.slice(2);if(!isCoinId(id))return null;return{id:id,symbol:clamp(symbol||"TOKEN",MAX_SYMBOL_CHARS).toUpperCase(),name:clamp(name||"PulseChain token",MAX_NAME_CHARS),address:addr,origin:"pulsechain"}}
+function normalizeCoin(value){var known=lookupCatalog(value);if(known)return known;if(typeof value==="string"){var id=text(value).toLowerCase();if(id.indexOf("pls-")===0&&/^pls-[a-f0-9]{40}$/.test(id))return genericPulseCoin("0x"+id.slice(4),"","");return null}if(!value||typeof value!=="object")return null;var a=text(value.address);if(isAddress(a))return genericPulseCoin(a,value.symbol,value.name);var fallbackId=text(value.id).toLowerCase();if(fallbackId.indexOf("pls-")===0&&/^pls-[a-f0-9]{40}$/.test(fallbackId))return genericPulseCoin("0x"+fallbackId.slice(4),value.symbol,value.name);return null}
+function normalizeCoins(values){var list=toArray(values);var coins=[];var seen={};for(var i=0;i<list.length;i++){var coin=normalizeCoin(list[i]);if(!coin||seen[coin.id])continue;seen[coin.id]=true;coins.push(coin)}return coins}
+function coinsFromSettings(settings){var configured=settings?settings.coins:undefined;if(!isArrayLike(configured))return DEFAULT_COINS.slice();return normalizeCoins(configured)}
+function addCoin(coins,coin){return normalizeCoins(toArray(coins).concat([coin]))}
+function removeCoin(coins,id){var target=text(id).toLowerCase();var list=toArray(coins);var kept=[];for(var i=0;i<list.length;i++)if(text(list[i].id).toLowerCase()!==target)kept.push(list[i]);return kept}
+function normalizeWindow(key){var wanted=text(key).toLowerCase();for(var i=0;i<WINDOWS.length;i++)if(WINDOWS[i].key===wanted)return WINDOWS[i].key;return DEFAULT_WINDOW}
+function windowLabel(key){return normalizeWindow(key)}
+function normalizePrimary(settings,coins){var list=coins||coinsFromSettings(settings);var wanted=text(settings&&settings.primary).toLowerCase();for(var i=0;i<list.length;i++)if(list[i].id===wanted)return wanted;return list.length?list[0].id:DEFAULT_PRIMARY}
+function nextPrimary(coins,current){var list=toArray(coins);if(list.length===0)return DEFAULT_PRIMARY;var wanted=text(current).toLowerCase();var index=0;for(var i=0;i<list.length;i++)if(list[i].id===wanted){index=i;break}return list[(index+1)%list.length].id}
+function coinById(coins,id){var wanted=text(id).toLowerCase();var list=toArray(coins);for(var i=0;i<list.length;i++)if(list[i].id===wanted)return list[i];return list[0]||null}
+function scriptPathFromUrl(url){var path=text(url);if(path.indexOf("file://")===0)path=path.substring(7);return path}
+function compactCoins(coins){var list=toArray(coins);var out=[];for(var i=0;i<list.length;i++){if(!list[i]||!isAddress(list[i].address)||!isCoinId(list[i].id))continue;out.push({id:list[i].id,address:list[i].address.toLowerCase()})}return out}
+function fetchCommand(scriptUrl,coins){return["node",scriptPathFromUrl(scriptUrl),"prices",JSON.stringify(compactCoins(coins))]}
+function searchCommand(scriptUrl,query){var q=text(query);if(q==="")return[];return["node",scriptPathFromUrl(scriptUrl),"search",q]}
+function decode(raw){var body=text(raw);if(body==="")return{error:"No response"};var payload;try{payload=JSON.parse(body)}catch(e){return{error:"Bad response"}}if(!payload||typeof payload!=="object")return{error:"Bad response"};if(payload.status&&toNumber(payload.status.error_code)===429)return{error:"Rate limited"};return{payload:payload}}
+function placeholderCoins(coins){var list=toArray(coins);var rows=[];for(var i=0;i<list.length;i++)rows.push({id:list[i].id,symbol:list[i].symbol,name:list[i].name,address:list[i].address,origin:list[i].origin,originLabel:originLabel(list[i].origin),price:null,change:null});return rows}
+function changeForWindow(entry,windowKey){var key=normalizeWindow(windowKey);if(!entry||!entry.change)return null;if(typeof entry.change==="number")return toNumber(entry.change);return toNumber(entry.change[key])}
+function parseMarkets(raw,coins,windowKey){var wanted=toArray(coins);if(wanted.length===0)return{ok:false,coins:[],error:"No coins"};var decoded=decode(raw);if(decoded.error)return{ok:false,coins:[],error:decoded.error};var payload=decoded.payload;var rows=payload.coins;if(!isArrayLike(rows))return{ok:false,coins:[],error:"No prices"};var byId={};for(var i=0;i<rows.length;i++){var row=rows[i];if(row&&row.id)byId[text(row.id).toLowerCase()]=row}var priced=0;var parsed=[];for(var c=0;c<wanted.length;c++){var coin=wanted[c];var match=byId[coin.id]||{};var price=toNumber(match.price);if(price!==null)priced++;parsed.push({id:coin.id,symbol:coin.symbol,name:coin.name,address:coin.address,origin:coin.origin,originLabel:originLabel(coin.origin),price:price,change:changeForWindow(match,windowKey),liquidity:toNumber(match.liquidity),volume24h:toNumber(match.volume24h)})}if(priced===0)return{ok:false,coins:parsed,error:"No prices"};return{ok:true,coins:parsed,error:""}}
+function catalogSearch(query,existingCoins){var q=text(query).toLowerCase();var taken={};var existing=toArray(existingCoins);for(var e=0;e<existing.length;e++)taken[text(existing[e].id).toLowerCase()]=true;var results=[];for(var i=0;i<CATALOG.length&&results.length<SEARCH_LIMIT;i++){var entry=CATALOG[i];if(taken[entry.id])continue;if(q!==""){var hay=(entry.id+" "+entry.symbol+" "+entry.displaySymbol+" "+entry.name+" "+entry.address).toLowerCase();if(hay.indexOf(q)<0)continue}else if(!entry.rh)continue;taken[entry.id]=true;results.push(catalogCoin(entry))}return results}
+function parseSearch(raw,existingCoins,query){var local=catalogSearch(query,existingCoins);var taken={};for(var t=0;t<local.length;t++)taken[local[t].id]=true;var existing=toArray(existingCoins);for(var e=0;e<existing.length;e++)taken[text(existing[e].id).toLowerCase()]=true;if(text(raw)==="")return{ok:local.length>0,results:local,error:local.length?"":"No matches"};var decoded=decode(raw);if(decoded.error){if(local.length>0)return{ok:true,results:local,error:""};return{ok:false,results:[],error:decoded.error}}var found=decoded.payload.results;if(!isArrayLike(found))found=[];var results=local.slice();for(var i=0;i<found.length&&results.length<SEARCH_LIMIT;i++){var coin=genericPulseCoin(found[i].address,found[i].symbol,found[i].name);if(!coin||taken[coin.id])continue;taken[coin.id]=true;results.push(coin)}if(results.length===0)return{ok:false,results:[],error:"No matches"};return{ok:true,results:results,error:""}}
+function shouldFetch(lastFetchAt,now,minIntervalMs){var last=toNumber(lastFetchAt);if(last===null)return true;var elapsed=toNumber(now)-last;return elapsed>=minIntervalMs||elapsed<0}
+function groupThousands(digits){var out="";for(var i=0;i<digits.length;i++){if(i>0&&(digits.length-i)%3===0)out+=",";out+=digits.charAt(i)}return out}
+function formatPrice(value){var number=toNumber(value);if(number===null)return"—";if(number>=1){var fixed=number.toFixed(2);var dot=fixed.indexOf(".");return"$"+groupThousands(fixed.substring(0,dot))+fixed.substring(dot)}if(number>=0.01)return"$"+number.toFixed(4);var padded=number.toFixed(12);var match=padded.match(/^0\.(0*)([1-9]\d{0,3})/);if(!match)return"$"+padded.replace(/0+$/,"");var digits=match[2];while(digits.length<4)digits+="0";return"$0."+match[1]+digits}
+function formatBarPrice(value){var number=toNumber(value);if(number===null)return"—";if(number>=100)return formatPrice(number);if(number>=1)return"$"+number.toFixed(2);if(number>=0.01)return"$"+number.toFixed(3);var full=formatPrice(number);return full.length>10?full.substring(0,10):full}
+function formatChange(value){var number=toNumber(value);if(number===null)return"—";var body=Math.abs(number).toFixed(2)+"%";if(number>0)return"+"+body;if(number<0)return"-"+body;return"0.00%"}
+function trend(value){var number=toNumber(value);if(number===null||number===0)return"flat";return number>0?"up":"down"}
+function trendGlyph(value){var direction=trend(value);if(direction==="up")return"▲";if(direction==="down")return"▼";return"·"}
+function barLabel(row,compact){if(!row)return"Pulse";var symbol=row.symbol||"Pulse";if(row.price===null||row.price===undefined)return symbol;if(compact)return symbol+" "+formatBarPrice(row.price);var move=formatChange(row.change).replace("%","");if(move.charAt(0)==="+"||move.charAt(0)==="-")move=move.substring(1);return symbol+" "+formatBarPrice(row.price)+" "+trendGlyph(row.change)+move}
+function tickerEnabled(settings){var value=settings?settings.ticker:undefined;return value===true||value==="true"||value===1}
+function tickerWidth(settings){var value=toNumber(settings?settings.tickerWidth:undefined);if(value===null)return DEFAULT_TICKER_WIDTH;if(value<160)return 160;if(value>480)return 480;return Math.round(value)}
+function tickerParts(rows){var list=toArray(rows);var parts=[];for(var i=0;i<list.length;i++)parts.push({id:list[i].id,text:barLabel(list[i],false),trend:trend(list[i].change)});return parts}
+function tickerText(rows){var parts=tickerParts(rows);var labels=[];for(var i=0;i<parts.length;i++)labels.push(parts[i].text);return labels.join("  ·  ")}
+function errorForExit(code){var number=toNumber(code);if(number===0)return"";if(number===22)return"Rate limited";if(number===28)return"Timed out";if(number===63)return"Response too large";if(number===6||number===7)return"Offline";return"Network error"}
+function pad2(value){var number=Number(value);return(number<10?"0":"")+number}
+function formatUpdatedAt(date){if(!date||typeof date.getHours!=="function")return"";return pad2(date.getHours())+":"+pad2(date.getMinutes())}
+if(typeof module!=="undefined"&&module.exports){module.exports={CATALOG:CATALOG,DEFAULT_COINS:DEFAULT_COINS,WINDOWS:WINDOWS,DEFAULT_WINDOW:DEFAULT_WINDOW,DEFAULT_PRIMARY:DEFAULT_PRIMARY,DEFAULT_TICKER:DEFAULT_TICKER,DEFAULT_TICKER_WIDTH:DEFAULT_TICKER_WIDTH,SEARCH_LIMIT:SEARCH_LIMIT,MIN_FETCH_INTERVAL_MS:MIN_FETCH_INTERVAL_MS,MAX_RESPONSE_BYTES:MAX_RESPONSE_BYTES,MAX_NAME_CHARS:MAX_NAME_CHARS,MAX_SYMBOL_CHARS:MAX_SYMBOL_CHARS,coinsFromSettings:coinsFromSettings,addCoin:addCoin,removeCoin:removeCoin,normalizeCoin:normalizeCoin,normalizeWindow:normalizeWindow,windowLabel:windowLabel,normalizePrimary:normalizePrimary,nextPrimary:nextPrimary,coinById:coinById,originLabel:originLabel,fetchCommand:fetchCommand,searchCommand:searchCommand,parseMarkets:parseMarkets,parseSearch:parseSearch,catalogSearch:catalogSearch,placeholderCoins:placeholderCoins,shouldFetch:shouldFetch,formatPrice:formatPrice,formatBarPrice:formatBarPrice,formatChange:formatChange,trend:trend,trendGlyph:trendGlyph,barLabel:barLabel,tickerEnabled:tickerEnabled,tickerWidth:tickerWidth,tickerParts:tickerParts,tickerText:tickerText,errorForExit:errorForExit,formatUpdatedAt:formatUpdatedAt,compactCoins:compactCoins,scriptPathFromUrl:scriptPathFromUrl}}
