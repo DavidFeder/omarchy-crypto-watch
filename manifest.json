@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "admxn.pulsewatch",
+  "id": "io.github.davidfeder.pulsewatch",
   "name": "Pulse Watch",
-  "version": "0.1.1",
-  "author": "admxn",
+  "version": "0.2.0",
+  "author": "David Feder",
   "license": "MIT",
   "description": "PulseChain and RH coin prices in the bar: HEX, PLS, PLSX, INC, PRVX, eHEX from PulseX via DexScreener",
   "kinds": ["bar-widget"],
