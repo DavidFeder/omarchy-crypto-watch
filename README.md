@@ -1,5 +1,9 @@
 # Pulse Watch
 
+<p align="center">
+  <img src="preview.svg" alt="Pulse Watch panel: HEX, PLS, PLSX, INC, PRVX, and eHEX from PulseX" width="336">
+</p>
+
 Fork of [Crypto Watch](https://github.com/victorrangel10/omarchy-crypto-watch) for **PulseChain** and Richard Heart coins.
 
 The bar shows **HEX** (or whichever coin you pin) with a live PulseX price. Click **ticker** in the panel to put every coin on the bar as a scrolling tape. Click the pill for HEX, PLS, PLSX, INC, PRVX, and eHEX — distinct assets, not the same ticker twice.
