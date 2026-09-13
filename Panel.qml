@@ -6,7 +6,7 @@ import "Model.js" as Model
 
 Panel {
   id: root
-  moduleName: "admxn.pulsewatch"
+  moduleName: "io.github.davidfeder.pulsewatch"
   manageIpc: false
   property var anchorItem: null
   property var hostWidget: null
