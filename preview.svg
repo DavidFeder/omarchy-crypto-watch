@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="336" height="520" viewBox="0 0 336 520">
+  <rect width="336" height="520" rx="14" fill="#161821"/>
+  <text x="16" y="32" fill="#e6e8ee" font-family="sans-serif" font-size="18" font-weight="700">Pulse Watch</text>
+  <text x="16" y="50" fill="#8b90a0" font-family="sans-serif" font-size="11">All coins on the bar · hover to pause · T to toggle</text>
+  <text x="16" y="76" fill="#8b90a0" font-family="sans-serif" font-size="12">1h</text>
+  <text x="44" y="76" fill="#8b90a0" font-family="sans-serif" font-size="12">6h</text>
+  <rect x="72" y="62" width="36" height="20" rx="6" fill="#2b3344"/>
+  <text x="78" y="76" fill="#e6e8ee" font-family="sans-serif" font-size="12" font-weight="700">24h</text>
+  <rect x="220" y="62" width="48" height="20" rx="6" fill="#2b3344"/>
+  <text x="228" y="76" fill="#e6e8ee" font-family="sans-serif" font-size="12" font-weight="700">ticker</text>
+  <text x="276" y="76" fill="#8b90a0" font-family="sans-serif" font-size="11">add coin</text>
+  <text x="16" y="112" fill="#e6e8ee" font-family="sans-serif" font-size="16" font-weight="700">HEX</text>
+  <text x="58" y="112" fill="#7ee0c6" font-family="sans-serif" font-size="11">bar</text>
+  <text x="16" y="128" fill="#8b90a0" font-family="sans-serif" font-size="11">HEX (PulseChain)</text>
+  <text x="230" y="112" fill="#e6e8ee" font-family="sans-serif" font-size="16" text-anchor="end">$0.003606</text>
+  <text x="320" y="112" fill="#7ee0c6" font-family="sans-serif" font-size="12" text-anchor="end">+1.66% · 24h</text>
+  <text x="16" y="168" fill="#e6e8ee" font-family="sans-serif" font-size="16" font-weight="700">PLS</text>
+  <text x="16" y="184" fill="#8b90a0" font-family="sans-serif" font-size="11">PulseChain</text>
+  <text x="230" y="168" fill="#e6e8ee" font-family="sans-serif" font-size="16" text-anchor="end">$0.00001195</text>
+  <text x="320" y="168" fill="#e06c75" font-family="sans-serif" font-size="12" text-anchor="end">-2.62% · 24h</text>
+  <text x="16" y="224" fill="#e6e8ee" font-family="sans-serif" font-size="16" font-weight="700">PLSX</text>
+  <text x="16" y="240" fill="#8b90a0" font-family="sans-serif" font-size="11">PulseX</text>
+  <text x="230" y="224" fill="#e6e8ee" font-family="sans-serif" font-size="16" text-anchor="end">$0.00001033</text>
+  <text x="320" y="224" fill="#e06c75" font-family="sans-serif" font-size="12" text-anchor="end">-3.31% · 24h</text>
+  <text x="16" y="280" fill="#e6e8ee" font-family="sans-serif" font-size="16" font-weight="700">INC</text>
+  <text x="16" y="296" fill="#8b90a0" font-family="sans-serif" font-size="11">Incentive</text>
+  <text x="230" y="280" fill="#e6e8ee" font-family="sans-serif" font-size="16" text-anchor="end">$0.5458</text>
+  <text x="320" y="280" fill="#e06c75" font-family="sans-serif" font-size="12" text-anchor="end">-5.00% · 24h</text>
+  <text x="16" y="336" fill="#e6e8ee" font-family="sans-serif" font-size="16" font-weight="700">PRVX</text>
+  <text x="16" y="352" fill="#8b90a0" font-family="sans-serif" font-size="11">ProveX</text>
+  <text x="230" y="336" fill="#e6e8ee" font-family="sans-serif" font-size="16" text-anchor="end">$0.00009159</text>
+  <text x="320" y="336" fill="#7ee0c6" font-family="sans-serif" font-size="12" text-anchor="end">+0.63% · 24h</text>
+  <text x="16" y="392" fill="#e6e8ee" font-family="sans-serif" font-size="16" font-weight="700">eHEX</text>
+  <text x="16" y="408" fill="#8b90a0" font-family="sans-serif" font-size="11">eHEX (bridged from Ethereum)</text>
+  <text x="230" y="392" fill="#e6e8ee" font-family="sans-serif" font-size="16" text-anchor="end">$0.001280</text>
+  <text x="320" y="392" fill="#7ee0c6" font-family="sans-serif" font-size="12" text-anchor="end">+1.80% · 24h</text>
+  <line x1="16" y1="440" x2="320" y2="440" stroke="#2a2f3c"/>
+  <text x="168" y="464" fill="#8b90a0" font-family="sans-serif" font-size="11" text-anchor="middle">PulseX · DexScreener · 24h</text>
+</svg>
