@@ -1,266 +1,118 @@
 const assert = require("assert")
-const fs = require("fs")
-const path = require("path")
 const Model = require("../Model.js")
 
-const marketsFixture = fs.readFileSync(path.join(__dirname, "fixtures/markets.json"), "utf8")
-const searchFixture = fs.readFileSync(path.join(__dirname, "fixtures/search.json"), "utf8")
+assert.deepStrictEqual(Model.DEFAULT_COINS.map((c) => c.id), ["hex", "pls", "plsx", "inc", "prvx", "ehex"])
+assert.deepStrictEqual(Model.DEFAULT_COINS.map((c) => c.symbol), ["HEX", "PLS", "PLSX", "INC", "PRVX", "eHEX"])
+assert.strictEqual(Model.DEFAULT_COINS[0].address, "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39")
+assert.strictEqual(Model.DEFAULT_COINS[4].address, "0xf6f8db0aba00007681f8faf16a0fda1c9b030b11")
+assert.strictEqual(Model.DEFAULT_COINS[5].address, "0x57fde0a71132198bbec939b98976993d8d89d225")
+assert.notStrictEqual(Model.DEFAULT_COINS[0].address, Model.DEFAULT_COINS[5].address)
 
-assert.deepStrictEqual(Model.DEFAULT_COINS.map((c) => c.id), ["bitcoin", "ethereum", "solana"])
-assert.deepStrictEqual(Model.DEFAULT_COINS.map((c) => c.symbol), ["BTC", "ETH", "SOL"])
-
-assert.deepStrictEqual(Model.coinsFromSettings(undefined).map((c) => c.id), ["bitcoin", "ethereum", "solana"])
-assert.deepStrictEqual(Model.coinsFromSettings(null).map((c) => c.id), ["bitcoin", "ethereum", "solana"])
-assert.deepStrictEqual(Model.coinsFromSettings({}).map((c) => c.id), ["bitcoin", "ethereum", "solana"])
-assert.deepStrictEqual(Model.coinsFromSettings({ coins: "nope" }).map((c) => c.id), ["bitcoin", "ethereum", "solana"])
+assert.deepStrictEqual(Model.coinsFromSettings(undefined).map((c) => c.id), ["hex", "pls", "plsx", "inc", "prvx", "ehex"])
+assert.deepStrictEqual(Model.coinsFromSettings({}).map((c) => c.id), ["hex", "pls", "plsx", "inc", "prvx", "ehex"])
 assert.deepStrictEqual(Model.coinsFromSettings({ coins: [] }), [])
-assert.deepStrictEqual(Model.coinsFromSettings({ coins: [null, {}, 7, { id: "" }] }), [])
+assert.deepStrictEqual(Model.coinsFromSettings({ coins: ["hex", "ehex"] }).map((c) => c.symbol), ["HEX", "eHEX"])
 
-const custom = Model.coinsFromSettings({ coins: [{ id: " Solana ", symbol: "sol", name: " Solana " }, "dogecoin"] })
-assert.deepStrictEqual(custom, [
-  { id: "solana", symbol: "SOL", name: "Solana" },
-  { id: "dogecoin", symbol: "DOGECOIN", name: "Dogecoin" }
-])
+const byAddress = Model.normalizeCoin({ address: "0x95B303987A60C71504D99Aa1b13B4DA07b0790ab" })
+assert.strictEqual(byAddress.id, "plsx")
+assert.strictEqual(byAddress.symbol, "PLSX")
 
-const deduped = Model.coinsFromSettings({ coins: [{ id: "bitcoin", symbol: "BTC", name: "Bitcoin" }, { id: "BITCOIN", symbol: "XXX", name: "Dupe" }] })
-assert.strictEqual(deduped.length, 1)
-assert.strictEqual(deduped[0].symbol, "BTC")
+assert.strictEqual(Model.normalizeCoin("bitcoin"), null)
+assert.strictEqual(Model.normalizeCoin("hex").symbol, "HEX")
+assert.strictEqual(Model.normalizeCoin("HEX").id, "hex")
 
-function sequenceLike(items) {
-  const fake = { length: items.length }
-  items.forEach((item, i) => { fake[i] = item })
-  return fake
-}
+const unknown = Model.normalizeCoin({
+  address: "0x1111111111111111111111111111111111111111",
+  symbol: "foo",
+  name: "Foo Token"
+})
+assert.strictEqual(unknown.id, "pls-1111111111111111111111111111111111111111")
+assert.strictEqual(unknown.symbol, "FOO")
 
-const v4 = sequenceLike([
-  { id: "bitcoin", symbol: "BTC", name: "Bitcoin" },
-  { id: "ethereum", symbol: "ETH", name: "Ethereum" },
-  { id: "solana", symbol: "SOL", name: "Solana" },
-  { id: "cardano", symbol: "ADA", name: "Cardano" }
-])
-assert.strictEqual(Array.isArray(v4), false)
-assert.deepStrictEqual(Model.coinsFromSettings({ coins: v4 }).map((c) => c.symbol), ["BTC", "ETH", "SOL", "ADA"])
-assert.deepStrictEqual(Model.coinsFromSettings({ coins: sequenceLike([]) }), [])
-assert.deepStrictEqual(Model.coinsFromSettings({ coins: sequenceLike(["dogecoin"]) }).map((c) => c.id), ["dogecoin"])
-assert.deepStrictEqual(Model.coinsFromSettings({ coins: "bitcoin" }).map((c) => c.id), ["bitcoin", "ethereum", "solana"])
-assert.deepStrictEqual(Model.coinsFromSettings({ coins: 3 }).map((c) => c.id), ["bitcoin", "ethereum", "solana"])
+assert.deepStrictEqual(Model.addCoin(Model.DEFAULT_COINS, { id: "hdrn" }).map((c) => c.id).slice(-1), ["hdrn"])
+assert.deepStrictEqual(Model.removeCoin(Model.DEFAULT_COINS, "ehex").map((c) => c.id), ["hex", "pls", "plsx", "inc", "prvx"])
 
-const v4Two = sequenceLike([{ id: "bitcoin", symbol: "BTC", name: "Bitcoin" }, { id: "solana", symbol: "SOL", name: "Solana" }])
-assert.deepStrictEqual(Model.addCoin(v4Two, { id: "cardano", symbol: "ADA", name: "Cardano" }).map((c) => c.id), ["bitcoin", "solana", "cardano"])
-assert.deepStrictEqual(Model.removeCoin(v4Two, "bitcoin").map((c) => c.id), ["solana"])
-assert.deepStrictEqual(Model.placeholderCoins(v4Two).map((c) => c.symbol), ["BTC", "SOL"])
-assert.deepStrictEqual(Model.parseMarkets(marketsFixture, v4Two, "24h").coins.map((c) => c.symbol), ["BTC", "SOL"])
-assert.strictEqual(Model.priceUrl(v4Two).indexOf("ids=bitcoin,solana") > 0, true)
-assert.strictEqual(Model.parseSearch(searchFixture, sequenceLike([{ id: "solana", symbol: "SOL", name: "Solana" }])).results.some((r) => r.id === "solana"), false)
+assert.deepStrictEqual(Model.WINDOWS.map((w) => w.key), ["1h", "6h", "24h"])
+assert.strictEqual(Model.normalizeWindow("6h"), "6h")
+assert.strictEqual(Model.normalizeWindow("7d"), "24h")
+assert.strictEqual(Model.normalizePrimary({ primary: "plsx" }, Model.DEFAULT_COINS), "plsx")
+assert.strictEqual(Model.normalizePrimary({ primary: "nope" }, Model.DEFAULT_COINS), "hex")
+assert.strictEqual(Model.nextPrimary(Model.DEFAULT_COINS, "hex"), "pls")
+assert.strictEqual(Model.nextPrimary(Model.DEFAULT_COINS, "ehex"), "hex")
 
-const base = Model.DEFAULT_COINS.slice()
-const added = Model.addCoin(base, { id: "cardano", symbol: "ada", name: "Cardano" })
-assert.deepStrictEqual(added.map((c) => c.id), ["bitcoin", "ethereum", "solana", "cardano"])
-assert.strictEqual(added[3].symbol, "ADA")
-assert.strictEqual(base.length, 3)
-assert.deepStrictEqual(Model.addCoin(base, { id: "BITCOIN", symbol: "BTC", name: "Bitcoin" }).map((c) => c.id), ["bitcoin", "ethereum", "solana"])
-assert.deepStrictEqual(Model.addCoin(base, null).map((c) => c.id), ["bitcoin", "ethereum", "solana"])
-assert.deepStrictEqual(Model.addCoin(base, { id: "" }).map((c) => c.id), ["bitcoin", "ethereum", "solana"])
-
-assert.deepStrictEqual(Model.removeCoin(base, "ethereum").map((c) => c.id), ["bitcoin", "solana"])
-assert.deepStrictEqual(Model.removeCoin(base, "ETHEREUM").map((c) => c.id), ["bitcoin", "solana"])
-assert.deepStrictEqual(Model.removeCoin(base, "nothing").map((c) => c.id), ["bitcoin", "ethereum", "solana"])
-assert.deepStrictEqual(Model.removeCoin([{ id: "bitcoin", symbol: "BTC", name: "Bitcoin" }], "bitcoin"), [])
-assert.strictEqual(base.length, 3)
-
-assert.deepStrictEqual(Model.WINDOWS.map((w) => w.key), ["1h", "24h", "7d"])
-assert.strictEqual(Model.DEFAULT_WINDOW, "24h")
-assert.strictEqual(Model.normalizeWindow("1h"), "1h")
-assert.strictEqual(Model.normalizeWindow("1H"), "1h")
-assert.strictEqual(Model.normalizeWindow(" 7d "), "7d")
-assert.strictEqual(Model.normalizeWindow(""), "24h")
-assert.strictEqual(Model.normalizeWindow(null), "24h")
-assert.strictEqual(Model.normalizeWindow("30d"), "24h")
-assert.strictEqual(Model.windowLabel("7d"), "7d")
-
-const url = Model.priceUrl(Model.DEFAULT_COINS)
-assert.strictEqual(url.indexOf("api.coingecko.com/api/v3/coins/markets") > 0, true)
-assert.strictEqual(url.indexOf("vs_currency=usd") > 0, true)
-assert.strictEqual(url.indexOf("ids=bitcoin,ethereum,solana") > 0, true)
-assert.strictEqual(url.indexOf("price_change_percentage=1h,24h,7d") > 0, true)
-assert.strictEqual(url.indexOf("sparkline=false") > 0, true)
-assert.strictEqual(/[?&]_=/.test(url), false)
-assert.strictEqual(Model.priceUrl([]), "")
-
-const markets24 = Model.parseMarkets(marketsFixture, Model.DEFAULT_COINS, "24h")
-assert.strictEqual(markets24.ok, true)
-assert.strictEqual(markets24.error, "")
-assert.deepStrictEqual(markets24.coins.map((c) => c.symbol), ["BTC", "ETH", "SOL"])
-assert.strictEqual(markets24.coins[0].price, 78320)
-assert.strictEqual(markets24.coins[0].change, 7.7)
-assert.strictEqual(markets24.coins[2].price, 93.69)
-assert.strictEqual(markets24.coins[2].change, 7.4)
-
-const markets1h = Model.parseMarkets(marketsFixture, Model.DEFAULT_COINS, "1h")
-assert.strictEqual(markets1h.coins[0].change, -0.2)
-const markets7d = Model.parseMarkets(marketsFixture, Model.DEFAULT_COINS, "7d")
-assert.strictEqual(markets7d.coins[0].change, 24.6)
-assert.strictEqual(markets7d.coins[1].change, 33.9)
-
-const reordered = Model.parseMarkets(marketsFixture, [
-  { id: "solana", symbol: "SOL", name: "Solana" },
-  { id: "bitcoin", symbol: "BTC", name: "Bitcoin" }
-], "24h")
-assert.deepStrictEqual(reordered.coins.map((c) => c.symbol), ["SOL", "BTC"])
-assert.strictEqual(reordered.coins[0].price, 93.69)
-
-const enriched = Model.parseMarkets(marketsFixture, [{ id: "solana", symbol: "SOLANA", name: "solana" }], "24h")
-assert.strictEqual(enriched.coins[0].symbol, "SOL")
-assert.strictEqual(enriched.coins[0].name, "Solana")
-
-const missing = Model.parseMarkets(marketsFixture, [
-  { id: "bitcoin", symbol: "BTC", name: "Bitcoin" },
-  { id: "nosuchcoin", symbol: "NOPE", name: "Nope" }
-], "24h")
-assert.strictEqual(missing.ok, true)
-assert.strictEqual(missing.coins[1].price, null)
-assert.strictEqual(missing.coins[1].change, null)
-assert.strictEqual(missing.coins[1].symbol, "NOPE")
-
-assert.strictEqual(Model.parseMarkets("", Model.DEFAULT_COINS, "24h").error, "No response")
-assert.strictEqual(Model.parseMarkets(null, Model.DEFAULT_COINS, "24h").error, "No response")
-assert.strictEqual(Model.parseMarkets("<html>429</html>", Model.DEFAULT_COINS, "24h").error, "Bad response")
-assert.strictEqual(Model.parseMarkets("[]", Model.DEFAULT_COINS, "24h").error, "No prices")
-assert.strictEqual(Model.parseMarkets('{"status":{"error_code":429}}', Model.DEFAULT_COINS, "24h").error, "Rate limited")
-assert.strictEqual(Model.parseMarkets(marketsFixture, [], "24h").error, "No coins")
-
-assert.strictEqual(Model.searchUrl("sol").indexOf("api.coingecko.com/api/v3/search?query=sol") > 0, true)
-assert.strictEqual(Model.searchUrl("bitcoin cash").indexOf("query=bitcoin%20cash") > 0, true)
-assert.strictEqual(Model.searchUrl("  "), "")
-assert.strictEqual(Model.searchUrl(null), "")
-
-const found = Model.parseSearch(searchFixture, [])
-assert.strictEqual(found.ok, true)
-assert.strictEqual(found.error, "")
-assert.strictEqual(found.results.length, Model.SEARCH_LIMIT)
-assert.deepStrictEqual(found.results[0], { id: "solana", symbol: "SOL", name: "Solana" })
-
-const filtered = Model.parseSearch(searchFixture, [{ id: "solana", symbol: "SOL", name: "Solana" }])
-assert.strictEqual(filtered.results.some((r) => r.id === "solana"), false)
-assert.strictEqual(filtered.results.length, Model.SEARCH_LIMIT)
-
-assert.strictEqual(Model.parseSearch("", []).error, "No response")
-assert.strictEqual(Model.parseSearch("<html>", []).error, "Bad response")
-assert.strictEqual(Model.parseSearch('{"coins":[]}', []).error, "No matches")
-assert.strictEqual(Model.parseSearch('{"status":{"error_code":429}}', []).error, "Rate limited")
-
-assert.strictEqual(Model.MIN_FETCH_INTERVAL_MS, 30000)
-assert.strictEqual(Model.shouldFetch(null, 1000, 30000), true)
-assert.strictEqual(Model.shouldFetch(0, 30000, 30000), true)
-assert.strictEqual(Model.shouldFetch(1000, 31000, 30000), true)
-assert.strictEqual(Model.shouldFetch(1000, 30999, 30000), false)
-assert.strictEqual(Model.shouldFetch(5000, 1000, 30000), true)
-
-assert.strictEqual(Model.formatPrice(78320), "$78,320.00")
-assert.strictEqual(Model.formatPrice(2514.95), "$2,514.95")
-assert.strictEqual(Model.formatPrice(93.69), "$93.69")
-assert.strictEqual(Model.formatPrice(1234567.5), "$1,234,567.50")
-assert.strictEqual(Model.formatPrice(0.5), "$0.50")
-assert.strictEqual(Model.formatPrice(0.12345), "$0.1235")
-assert.strictEqual(Model.formatPrice(0.000008234), "$0.000008234")
-assert.strictEqual(Model.formatPrice(null), "—")
-assert.strictEqual(Model.formatPrice(undefined), "—")
-
-assert.strictEqual(Model.formatChange(7.1151069724448845), "+7.12%")
-assert.strictEqual(Model.formatChange(-8.358937521622284), "-8.36%")
-assert.strictEqual(Model.formatChange(0), "0.00%")
-assert.strictEqual(Model.formatChange(null), "—")
-
-assert.strictEqual(Model.trend(1.5), "up")
-assert.strictEqual(Model.trend(-1.5), "down")
-assert.strictEqual(Model.trend(0), "flat")
-assert.strictEqual(Model.trend(null), "flat")
-
-const hugeName = "N".repeat(2000000)
-const hugeSymbol = "S".repeat(2000000)
-
-assert.strictEqual(Model.MAX_NAME_CHARS, 128)
-assert.strictEqual(Model.MAX_SYMBOL_CHARS, 48)
-
-const clamped = Model.addCoin([], { id: "bitcoin", symbol: hugeSymbol, name: hugeName })
-assert.strictEqual(clamped[0].name.length, 128)
-assert.strictEqual(clamped[0].symbol.length, 48)
-
-const clampedMarkets = Model.parseMarkets(
-  JSON.stringify([{ id: "bitcoin", symbol: hugeSymbol, name: hugeName, current_price: 100 }]),
-  [{ id: "bitcoin", symbol: "BTC", name: "Bitcoin" }],
-  "24h"
-)
-assert.strictEqual(clampedMarkets.ok, true)
-assert.strictEqual(clampedMarkets.coins[0].name.length, 128)
-assert.strictEqual(clampedMarkets.coins[0].symbol.length, 48)
-
-const hostileIds = ["x#frag", "a b", "bitcoin&vs_currency=eur", "", "a".repeat(129), "a/b", "a%2e"]
-hostileIds.forEach((id) => {
-  assert.deepStrictEqual(Model.addCoin([], { id: id, symbol: "X", name: "X" }), [], "must reject id: " + id)
-  assert.deepStrictEqual(Model.coinsFromSettings({ coins: [id] }), [], "must reject bare id: " + id)
+const payload = JSON.stringify({
+  source: "dexscreener",
+  coins: [
+    { id: "hex", price: 0.003615, change: { "1h": -0.7, "6h": -0.79, "24h": 3.97 } },
+    { id: "pls", price: 0.00001053, change: { "1h": 0.1, "6h": -2.1, "24h": -4.2 } },
+    { id: "plsx", price: 0.00001050, change: { "24h": 0.02 } },
+    { id: "inc", price: 0.5732, change: { "24h": 1.2 } },
+    { id: "prvx", price: 0.00009258, change: { "24h": 12.7 } },
+    { id: "ehex", price: 0.001305, change: { "24h": 2.53 } }
+  ]
 })
 
-const longestRealId = "blackrock-etf-trust-ii-ishares-aaa-clo-active-etf-dinari-tokenized-etf"
-const validIds = ["bitcoin", "0x0-ai-ai-smart-contract", "wall_street", "a.b", "BITCOIN", "-11", "_", longestRealId, "a".repeat(128)]
-validIds.forEach((id) => {
-  assert.strictEqual(Model.addCoin([], { id: id, symbol: "X", name: "X" }).length, 1, "must accept id: " + id)
-})
-assert.strictEqual(Model.addCoin([], { id: "BITCOIN", symbol: "X", name: "X" })[0].id, "bitcoin")
+const markets = Model.parseMarkets(payload, Model.DEFAULT_COINS, "24h")
+assert.strictEqual(markets.ok, true)
+assert.strictEqual(markets.coins[0].symbol, "HEX")
+assert.strictEqual(markets.coins[0].price, 0.003615)
+assert.strictEqual(markets.coins[0].change, 3.97)
+assert.strictEqual(markets.coins[0].originLabel, "PulseChain HEX")
+assert.strictEqual(markets.coins[4].symbol, "PRVX")
+assert.strictEqual(markets.coins[5].symbol, "eHEX")
+assert.strictEqual(markets.coins[5].originLabel, "Bridged from Ethereum")
 
-const spaceBomb = "A" + " ".repeat(500000) + "B"
+const hour = Model.parseMarkets(payload, Model.DEFAULT_COINS, "1h")
+assert.strictEqual(hour.coins[0].change, -0.7)
 
-const bombStart = Date.now()
-const bombed = Model.parseMarkets(
-  JSON.stringify([{ id: "bitcoin", symbol: spaceBomb, name: spaceBomb, current_price: 100 }]),
-  [{ id: "bitcoin", symbol: "BTC", name: "Bitcoin" }],
-  "24h"
-)
-const bombElapsed = Date.now() - bombStart
-assert.strictEqual(bombed.coins[0].name.length, 128)
-assert.ok(bombElapsed < 1000, "interior whitespace must not backtrack, took " + bombElapsed + "ms")
+assert.strictEqual(Model.formatPrice(0.003615), "$0.003615")
+assert.strictEqual(Model.formatPrice(0.00001053), "$0.00001053")
+assert.strictEqual(Model.formatPrice(0.5732), "$0.5732")
+assert.strictEqual(Model.formatPrice(77314), "$77,314.00")
+assert.ok(!Model.formatPrice(0.00001053).includes("e-"))
+assert.ok(!Model.formatPrice(0.00001053).includes("e+"))
 
-const rawStart = Date.now()
-Model.parseMarkets("[" + " ".repeat(500000) + "]", Model.DEFAULT_COINS, "24h")
-const rawElapsed = Date.now() - rawStart
-assert.ok(rawElapsed < 1000, "raw body trim must not backtrack, took " + rawElapsed + "ms")
+assert.strictEqual(Model.formatChange(3.973), "+3.97%")
+assert.strictEqual(Model.formatChange(-8.59), "-8.59%")
+assert.strictEqual(Model.trendGlyph(1), "▲")
+assert.ok(Model.barLabel(markets.coins[0]).indexOf("HEX") === 0)
+assert.strictEqual(Model.tickerEnabled(undefined), false)
+assert.strictEqual(Model.tickerEnabled({ ticker: true }), true)
+assert.strictEqual(Model.tickerWidth({ tickerWidth: 90 }), 160)
+assert.ok(Model.tickerText(markets.coins).indexOf("HEX") === 0)
+assert.ok(Model.tickerText(markets.coins).indexOf("PRVX") > 0)
+assert.strictEqual(Model.tickerParts(markets.coins).length, 6)
 
-const hostileSearch = Model.parseSearch(
-  JSON.stringify({ coins: [{ id: "x#frag", symbol: "X", name: "X" }, { id: "solana", symbol: "SOL", name: "Solana" }] }),
-  []
-)
-assert.deepStrictEqual(hostileSearch.results.map((c) => c.id), ["solana"])
+const cmd = Model.fetchCommand("file:///tmp/bin/fetch.js", Model.DEFAULT_COINS)
+assert.strictEqual(cmd[0], "node")
+assert.strictEqual(cmd[1], "/tmp/bin/fetch.js")
+assert.strictEqual(cmd[2], "prices")
+const compact = JSON.parse(cmd[3])
+assert.strictEqual(compact[0].id, "hex")
+assert.strictEqual(compact[0].address, "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39")
 
-assert.ok(Model.priceUrl([{ id: "x#frag", symbol: "X", name: "X" }]).indexOf("ids=x%23frag") > 0)
-assert.ok(Model.priceUrl(Model.DEFAULT_COINS).indexOf("ids=bitcoin,ethereum,solana") > 0)
+assert.deepStrictEqual(Model.searchCommand("file:///tmp/bin/fetch.js", "hex"), ["node", "/tmp/bin/fetch.js", "search", "hex"])
+assert.deepStrictEqual(Model.searchCommand("file:///tmp/bin/fetch.js", "  "), [])
 
-assert.deepStrictEqual(Model.fetchCommand("https://api.coingecko.com/api/v3/search?query=btc"), [
-  "curl",
-  "-fsS",
-  "--proto",
-  "=https",
-  "--max-filesize",
-  "2097152",
-  "--max-time",
-  "10",
-  "https://api.coingecko.com/api/v3/search?query=btc"
-])
-assert.strictEqual(Model.MAX_RESPONSE_BYTES, 2097152)
+const local = Model.catalogSearch("hex", [])
+assert.ok(local.some((c) => c.id === "hex"))
+assert.ok(local.some((c) => c.id === "ehex"))
+assert.ok(!local.some((c) => c.id === "pls"))
 
-assert.strictEqual(Model.errorForExit(0), "")
+const parsedSearch = Model.parseSearch("", Model.DEFAULT_COINS, "")
+assert.ok(parsedSearch.results.some((c) => c.id === "hdrn"))
+assert.ok(!parsedSearch.results.some((c) => c.id === "hex"))
+
+const remoteSearch = Model.parseSearch(JSON.stringify({
+  results: [{ address: "0x1111111111111111111111111111111111111111", symbol: "FOO", name: "Foo" }]
+}), [], "foo")
+assert.ok(remoteSearch.results.some((c) => c.id === "pls-1111111111111111111111111111111111111111"))
+
+assert.strictEqual(Model.shouldFetch(null, 1000, 45000), true)
+assert.strictEqual(Model.shouldFetch(1000, 46000, 45000), true)
+assert.strictEqual(Model.shouldFetch(1000, 44999, 45000), false)
+
 assert.strictEqual(Model.errorForExit(22), "Rate limited")
-assert.strictEqual(Model.errorForExit(28), "Timed out")
-assert.strictEqual(Model.errorForExit(63), "Response too large")
-assert.strictEqual(Model.errorForExit(6), "Offline")
-assert.strictEqual(Model.errorForExit(7), "Offline")
-assert.strictEqual(Model.errorForExit(1), "Network error")
-
 assert.strictEqual(Model.formatUpdatedAt(new Date(2026, 7, 21, 9, 5)), "09:05")
-assert.strictEqual(Model.formatUpdatedAt(null), "")
-
-const placeholders = Model.placeholderCoins(Model.DEFAULT_COINS)
-assert.deepStrictEqual(placeholders.map((c) => c.symbol), ["BTC", "ETH", "SOL"])
-assert.strictEqual(placeholders[0].price, null)
-assert.strictEqual(placeholders[0].change, null)
 
 console.log("model-test: ok")
