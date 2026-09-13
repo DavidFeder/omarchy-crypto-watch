@@ -57,7 +57,7 @@ function getJson(urlString) {
         hostname: parsed.hostname,
         path: parsed.pathname + parsed.search,
         method: "GET",
-        headers: { Accept: "application/json", "User-Agent": "admxn.pulsewatch" }
+        headers: { Accept: "application/json", "User-Agent": "io.github.davidfeder.pulsewatch" }
       },
       (res) => {
         const chunks = []
